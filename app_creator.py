@@ -36,28 +36,43 @@ def SmartSearch(PdfObject, keyword, start_page = 0):
     PdfReader = PyPDF2.PdfFileReader(PdfObject)
     print("Searching for \'" + keyword + "\' in " + PdfObject.name)
 
+    #Search every page in the PDF
     for i in range (start_page, PdfReader.getNumPages()):
+
+        #Grab a single page of the PDF
         PageObject = PdfReader.getPage(i)
+
+        #Extract PDF text and pray its readable
         PageText = PageObject.extractText()
 
+        #Search through every character that was extracted
         for characters in range(len(PageText)):
-            if PageText[characters] == keyword[0]: #indicates first character matches
 
+            #Indicates the current character matches
+            if PageText[characters] == keyword[0]: 
+                
+                #Scan to see if the next characters match
                 for letters in range(1, len(keyword)):
                     characters = characters + 1
 
-                    if characters == len(PageText): #we will go out of bounders otherwise
+                    #We will go out of bounders otherwise
+                    if characters == len(PageText): 
+                        break
+                    
+                    #Ignore line breaks
+                    while PageText[characters] == '\n':  
+                        characters = characters + 1
+                    
+                    #Ignore extra spaces
+                    while PageText[characters] == ' ' and keyword[letters] != ' ': 
+                        characters = characters + 1
+                    
+                    #if two letters do not equal
+                    if PageText[characters] != keyword[letters]: 
                         break
 
-                    while PageText[characters] == '\n': #ignore line breaks
-                        characters = characters + 1
-                    
-                    while PageText[characters] == ' ' and keyword[letters] != ' ': #ignore extra spaces
-                        characters = characters + 1
-                    
-                    if PageText[characters] != keyword[letters]: #if two letters do not equal
-                        break
-                    elif (PageText[characters] == keyword[letters] and letters == (len(keyword) - 1)): #if end of word is reached and everything has matched
+                    #if end of word is reached and everything has matched
+                    elif (PageText[characters] == keyword[letters] and letters == (len(keyword) - 1)): 
                         return i
 
     print("Was unable to find \'" + keyword + "\' in file.")
@@ -67,12 +82,14 @@ def SmartSearch(PdfObject, keyword, start_page = 0):
 def GetPageNumbers(PdfObject):
     print("\nScanning APP...\n")
 
+    #Keywords that correspond where files will be inserted
     with open("keywords.txt", "r") as file:
         keywords = eval(file.readline())
 
     with open("alternate_keywords.txt", "r") as file:
         alternate_keywords = eval(file.readline())
 
+    #Find where the TOC ends; this will be beginning of search
     end_of_toc = SmartSearch(PdfObject, 'Plan prepared by:')
 
     page_numbers = {}
@@ -82,7 +99,8 @@ def GetPageNumbers(PdfObject):
     for key in keywords:
         page_numbers[key] = SmartSearch(PdfObject, keywords[key], end_of_toc)
 
-        if page_numbers[key] == -1: # if it couldnt be found with normal search
+        #If the page couldn't be found with the normal keywords
+        if page_numbers[key] == -1: 
             print("Searching with alternate keyword...")
             page_numbers[key] = SmartSearch(PdfObject, alternate_keywords[key], end_of_toc)
 
@@ -91,9 +109,14 @@ def GetPageNumbers(PdfObject):
         
         print("\n")
 
-    page_numbers['inspectorqualifications'] = page_numbers['deficiencylogs'] # this should be mentioned on the same page as deficiency logs
-    page_numbers['spillplan'] = page_numbers['drugprogram'] # mentioned on same page
-    page_numbers['fireprotection'] = page_numbers['drugprogram'] # mentioned on same page
+    #this should be mentioned on the same page as deficiency logs
+    page_numbers['inspectorqualifications'] = page_numbers['deficiencylogs'] 
+
+    #mentioned on same page
+    page_numbers['spillplan'] = page_numbers['drugprogram'] 
+
+    #mentioned on same page
+    page_numbers['fireprotection'] = page_numbers['drugprogram'] 
     
     return page_numbers
 
@@ -107,7 +130,9 @@ def constructPDF(PdfObject, filenames, page_numbers):
         PdfWriter.addPage(PdfReader.getPage(pages))
 
         if pages in page_numbers.values():
-            for keys in page_numbers: # figure out what documents go on that page
+
+            #figure out what documents go on that page
+            for keys in page_numbers: 
                 if page_numbers[keys] == pages:
                     files_to_add.append(keys)
                 
